@@ -4,7 +4,21 @@ import { createServer as createViteServer } from "vite";
 import { execSync } from "child_process";
 import fs from "fs";
 import os from "os";
+import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+
+dotenv.config();
+
+// Also load .env.local when present (used by some local setups / AI Studio)
+try {
+  const localEnvPath = path.join(process.cwd(), '.env.local');
+  if (fs.existsSync(localEnvPath)) {
+    dotenv.config({ path: localEnvPath });
+    console.log('Loaded .env.local');
+  }
+} catch (e) {
+  // ignore
+}
 
 const PORT = 3000;
 
@@ -43,10 +57,11 @@ async function startServer() {
   // API Route for GitHub Audit
   app.post("/api/audit", async (req, res) => {
     try {
+      console.log('Received /api/audit request body:', JSON.stringify(req.body).slice(0, 2000));
       const { repoUrl, repoUrl2, model } = req.body;
       
       if (!repoUrl || !model) {
-        return res.status(400).json({ error: "Missing repoUrl or model" });
+        return res.status(400).json({ error: "Missing repoUrl or model", received: { repoUrl: repoUrl || null, model: model || null } });
       }
 
       const geminiApiKey = process.env.GEMINI_API_KEY;
